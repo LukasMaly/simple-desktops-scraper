@@ -11,7 +11,9 @@
     
 """
 
-import sys, requests, os
+import os
+import sys
+import urllib
 from bs4 import BeautifulSoup
 
 # This is where the files are hosted
@@ -39,14 +41,14 @@ downloadurls = []
 
 def get_urls(): # y = limit of pages, x = start index
     urls =[]                     
-    x = int(input(" Select beginning range. Enter '1' for the very beginning: \n "))
-    y = int(input(" Select the final page to search:\n "))
-    op_commence = ' Operation commencing'
+    x = int(input("Select beginning range. Enter '1' for the very beginning: \n "))
+    y = int(input("Select the final page to search:\n "))
+    op_commence = 'Operation commencing'
     print(op_commence)
     for z in range(x, y):
         address = rooturl + "/browse/" + str(z)
-        r = requests.get(address)
-        soup = BeautifulSoup(r.text, 'html.parser')
+        html = urllib.request.urlopen(address).read()
+        soup = BeautifulSoup(html, 'html.parser')
         # The desktop div links to the various images
         backgrounds = soup.find_all("div", {"class":"desktop"})
         for background in backgrounds:
@@ -58,8 +60,8 @@ def get_urls(): # y = limit of pages, x = start index
 def get_download_urls(urls):
     downloadurls = []
     for url in urls:
-        r = requests.get(url)
-        soup = BeautifulSoup(r.text, 'html.parser')
+        html = urllib.request.urlopen(url).read()
+        soup = BeautifulSoup(html, 'html.parser')
         # Again, the desktop div, links to the download url
         background = soup.find("div", {"class":"desktop"})
         downloadurl = background.find("a")
@@ -76,13 +78,9 @@ def download_file(downloadurl):
     path = path + '/' + urls[x].split('/')[-2] + '.png' 
     # Second to last index is the file name, matching
     # the two url arrays
-    r = requests.get(downloadurl, stream=True)
-    # MUST HAVE the stream=True parameter
+    data = urllib.request.urlopen(downloadurl).read()
     with open(path, 'wb') as f:
-        for chunk in r.iter_content(chunk_size=1024): 
-            if chunk: # filter out keep-alive new chunks
-                f.write(chunk)
-                f.flush()
+        f.write(data)
     return filename # Why am I returning filename?
 
 def download_files(downloadurls):
@@ -90,11 +88,11 @@ def download_files(downloadurls):
         download_file(url)
 
 # Init Script        
-creating_dir = ' Directory: '  
-prep_op = '\n Preparing Operation\n'
-prep_op_2 = '\n Primary urls retrieved, getting download links\n'
-op = '\n Downloads beginning\n'
-success = '\n Your files have been downloaded successfully!\nTry again with a different index'
+creating_dir = 'Directory: '
+prep_op = '\nPreparing Operation\n'
+prep_op_2 = '\nPrimary urls retrieved, getting download links\n'
+op = '\nDownloads beginning\n'
+success = '\nYour files have been downloaded successfully!\nTry again with a different index'
 
 directory = input(' Select directory to save files into,\n \
 if directory doesn\'t exit, it will be \
@@ -105,7 +103,7 @@ if not os.path.exists(directory):
 directory = directory + "/" # is Path
 
 # Feedback Messages
-print(prep_op)        
+print(prep_op)
 urls = get_urls()
 print(prep_op_2)
 downloads = get_download_urls(urls)
